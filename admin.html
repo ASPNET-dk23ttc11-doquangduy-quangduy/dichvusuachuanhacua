@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Quản lý đơn đặt</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="logo">Admin</div>
+      <ul class="nav-menu">
+        <li><a href="/index.html">Trang Chủ</a></li>
+        <li><a href="/booking.html">Đặt dịch vụ</a></li>
+        <li><a href="/admin.html">Khách hàng</a></li>
+        <li><a href="/contact.html">Liên hệ</a></li>
+      </ul>
+    </div>
+
+    <section class="form-section">
+      <h2>Danh sách đơn đặt lịch</h2>
+
+      <form id="adminForm">
+        <table>
+          <thead>
+            <tr>
+              <th>Dịch vụ</th>
+              <th>Ngày</th>
+              <th>Giờ</th>
+              <th>Tỉnh/TP</th>
+              <th>Ghi chú</th>
+              <th>Trạng thái</th>
+              <th>Xóa</th>
+            </tr>
+          </thead>
+          <tbody id="bookingList">
+            <!-- Dữ liệu sẽ được JS render -->
+          </tbody>
+        </table>
+
+        <div style="margin-top: 20px; display: flex; gap: 20px">
+          <button type="submit">💾 Lưu trạng thái</button>
+          <button type="button" onclick="exportToCSV()">📥 Xuất Excel</button>
+        </div>
+      </form>
+    </section>
+
+    <script>
+      let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
+      const tbody = document.getElementById("bookingList");
+
+      function renderTable() {
+        tbody.innerHTML = "";
+
+        if (bookings.length === 0) {
+          tbody.innerHTML =
+            "<tr><td colspan='7'>Chưa có đơn đặt nào.</td></tr>";
+          return;
+        }
+
+        bookings.forEach((b, i) => {
+          const isDone = b.done ? "checked" : "";
+          const row = `
+        <tr>
+          <td>${b.service}</td>
+          <td>${b.date}</td>
+          <td>${b.time}</td>
+          <td>${b.city}</td>
+          <td>${b.note}</td>
+          <td style="text-align:center;">
+            <input type="checkbox" data-index="${i}" ${isDone}>
+          </td>
+          <td style="text-align:center;">
+            <button type="button" onclick="deleteBooking(${i})">❌</button>
+          </td>
+        </tr>`;
+          tbody.innerHTML += row;
+        });
+      }
+
+      // Lưu trạng thái checkbox
+      document
+        .getElementById("adminForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const checkboxes = document.querySelectorAll(
+            "input[type='checkbox'][data-index]"
+          );
+          checkboxes.forEach((cb) => {
+            const index = cb.getAttribute("data-index");
+            bookings[index].done = cb.checked;
+          });
+          localStorage.setItem("bookings", JSON.stringify(bookings));
+          alert("✅ Đã lưu trạng thái!");
+          renderTable();
+        });
+
+      // Xóa 1 dòng
+      function deleteBooking(index) {
+        if (confirm("Bạn chắc chắn muốn xóa đơn này?")) {
+          bookings.splice(index, 1);
+          localStorage.setItem("bookings", JSON.stringify(bookings));
+          renderTable();
+        }
+      }
+
+      // Xuất dữ liệu thành file CSV
+      function exportToCSV() {
+        if (bookings.length === 0) {
+          alert("Không có dữ liệu để xuất!");
+          return;
+        }
+
+        let csv = "Dịch vụ,Ngày,Giờ,Tỉnh/TP,Ghi chú,Đã làm\n";
+        bookings.forEach((b) => {
+          csv += `"${b.service}","${b.date}","${b.time}","${b.city}","${
+            b.note
+          }","${b.done ? "Đã làm" : "Chưa làm"}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "don-dat-lich.csv";
+        a.click();
+      }
+
+      renderTable();
+    </script>
+  </body>
+</html>
